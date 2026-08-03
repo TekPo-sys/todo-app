@@ -13,6 +13,13 @@ export default function TodoApp() {
   const [showResetForm, setShowResetForm] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
+  const colorOptions = [
+  { name: "none", dot: "bg-stone-300", border: "border-l-stone-300" },
+  { name: "red", dot: "bg-red-400", border: "border-l-red-400" },
+  { name: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
+  { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-400" },
+  ];
+
  useEffect(() => {
   // Check if this page load is from a password recovery link
   if (window.location.hash.includes("type=recovery")) {
@@ -36,14 +43,14 @@ export default function TodoApp() {
       if (session) fetchTodos();
     }, [session]);
 
-    async function fetchTodos() {
-      const { data, error } = await supabase
-        .from('todos')
-        .select('*')
-        .order('inserted_at', { ascending: false });
-      if (error) console.error(error);
-      else setTodos(data);
-    }
+  async function fetchTodos() {
+    const { data, error } = await supabase
+      .from('todos')
+      .select('*')
+      .order('position', { ascending: true });
+    if (error) console.error(error);
+    else setTodos(data);
+}
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | done
 
@@ -85,6 +92,27 @@ async function clearCompleted() {
     .eq('done', true);
   if (error) console.error(error);
   else setTodos((prev) => prev.filter((t) => !t.done));
+}
+
+async function cycleColor(id, currentColor) {
+  const idx = colorOptions.findIndex((c) => c.name === currentColor);
+  const next = colorOptions[(idx + 1) % colorOptions.length].name;
+  const { error } = await supabase.from('todos').update({ color: next }).eq('id', id);
+  if (error) console.error(error);
+  else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
+}
+
+async function moveTodo(id, direction) {
+  const index = todos.findIndex((t) => t.id === id);
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= todos.length) return;
+
+  const current = todos[index];
+  const target = todos[targetIndex];
+
+  await supabase.from('todos').update({ position: target.position }).eq('id', current.id);
+  await supabase.from('todos').update({ position: current.position }).eq('id', target.id);
+  fetchTodos();
 }
 
   const filtered = todos.filter((t) => {
@@ -205,31 +233,53 @@ async function handlePasswordUpdate(e) {
                   : "Your list is empty. Add something above."}
               </li>
             )}
-            {filtered.map((todo) => (
+          {filtered.map((todo, i) => {
+            const color = colorOptions.find((c) => c.name === todo.color) || colorOptions[0];
+            return (
               <li
                 key={todo.id}
-                className="group flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-stone-50 transition"
+                className={`group flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border}`}
               >
                 <button
                   onClick={() => toggleTodo(todo.id)}
                   className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition ${
-                    todo.done
-                      ? "bg-stone-900 border-stone-900"
-                      : "border-stone-300 hover:border-stone-500"
+                    todo.done ? "bg-stone-900 border-stone-900" : "border-stone-300 hover:border-stone-500"
                   }`}
                   aria-label={todo.done ? "Mark as not done" : "Mark as done"}
                 >
                   {todo.done && <Check size={12} className="text-stone-50" />}
                 </button>
-                <span
-                  className={`flex-1 text-sm ${
-                    todo.done
-                      ? "text-stone-400 line-through"
-                      : "text-stone-800"
-                  }`}
-                >
+
+                <button
+                  onClick={() => cycleColor(todo.id, todo.color)}
+                  className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`}
+                  aria-label="Cycle priority color"
+                  title="Click to change priority color"
+                />
+
+                <span className={`flex-1 text-sm ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
                   {todo.text}
                 </span>
+
+                <div className="flex flex-col opacity-0 group-hover:opacity-100 transition">
+                  <button
+                    onClick={() => moveTodo(todo.id, "up")}
+                    disabled={i === 0}
+                    className="text-stone-400 hover:text-stone-800 disabled:opacity-20 text-xs leading-none"
+                    aria-label="Move up"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveTodo(todo.id, "down")}
+                    disabled={i === filtered.length - 1}
+                    className="text-stone-400 hover:text-stone-800 disabled:opacity-20 text-xs leading-none"
+                    aria-label="Move down"
+                  >
+                    ▼
+                  </button>
+                </div>
+
                 <button
                   onClick={() => deleteTodo(todo.id)}
                   className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
@@ -238,9 +288,9 @@ async function handlePasswordUpdate(e) {
                   <Trash2 size={15} />
                 </button>
               </li>
-            ))}
+        );
+        })}
           </ul>
-
           {/* Footer */}
           {todos.some((t) => t.done) && (
             <div className="px-4 py-3 border-t border-stone-100">
