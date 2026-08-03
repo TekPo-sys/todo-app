@@ -261,7 +261,7 @@ async function handlePasswordUpdate(e) {
                   {todo.text}
                 </span>
 
-                <div className="flex flex-col opacity-0 group-hover:opacity-100 transition">
+                <div className="flex flex-col opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
                   <button
                     onClick={() => moveTodo(todo.id, "up")}
                     disabled={i === 0}
@@ -282,7 +282,7 @@ async function handlePasswordUpdate(e) {
 
                 <button
                   onClick={() => deleteTodo(todo.id)}
-                  className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
+                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
                   aria-label="Delete task"
                 >
                   <Trash2 size={15} />
