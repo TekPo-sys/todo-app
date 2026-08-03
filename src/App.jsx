@@ -14,13 +14,26 @@ export default function TodoApp() {
   const [todos, setTodos] = useState([]);
   const [session, setSession] = useState(null);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-    return () => listener.subscription.unsubscribe();
-  }, []);
+ useEffect(() => {
+  supabase.auth.getSession().then(({ data }) => setSession(data.session));
+
+  const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    setSession(session);
+
+    if (event === "PASSWORD_RECOVERY") {
+      const newPassword = prompt("Enter your new password:");
+      if (newPassword) {
+        supabase.auth.updateUser({ password: newPassword }).then(({ error }) => {
+          if (error) alert(error.message);
+          else alert("Password updated! You can now log in.");
+        });
+      }
+    }
+  });
+
+  return () => listener.subscription.unsubscribe();
+}, []);
+
 // Load todos from Supabase on first render
     useEffect(() => {
       if (session) fetchTodos();

@@ -19,6 +19,18 @@ export default function Auth({ onLogin }) {
     setLoading(false);
   }
 
+  async function handleResetPassword() {
+  if (!email) {
+    setError("Enter your email above first, then click reset.");
+    return;
+  }
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) setError(error.message);
+  else setError("Check your email for a password reset link.");
+}
+
   return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
       <form
@@ -58,7 +70,15 @@ export default function Auth({ onLogin }) {
         >
           {loading ? "Please wait..." : isSignUp ? "Sign up" : "Log in"}
         </button>
-
+        {!isSignUp && (
+        <button
+            type="button"
+            onClick={handleResetPassword}
+            className="w-full text-xs text-stone-400 hover:text-stone-700 transition-colors mt-2"
+        >
+            Forgot password?
+        </button>
+        )}
         <button
           type="button"
           onClick={() => setIsSignUp(!isSignUp)}
