@@ -7,27 +7,24 @@ import Auth from "./Auth";
 
 
 export default function TodoApp() {
-//   const [todos, setTodos] = useState(() => {
-//     const saved = localStorage.getItem("todos");
-//     return saved ? JSON.parse(saved) : [];
-// });
+
   const [todos, setTodos] = useState([]);
   const [session, setSession] = useState(null);
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
  useEffect(() => {
+  // Check if this page load is from a password recovery link
+  if (window.location.hash.includes("type=recovery")) {
+    setShowResetForm(true);
+  }
+
   supabase.auth.getSession().then(({ data }) => setSession(data.session));
 
   const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
     setSession(session);
-
     if (event === "PASSWORD_RECOVERY") {
-      const newPassword = prompt("Enter your new password:");
-      if (newPassword) {
-        supabase.auth.updateUser({ password: newPassword }).then(({ error }) => {
-          if (error) alert(error.message);
-          else alert("Password updated! You can now log in.");
-        });
-      }
+      setShowResetForm(true);
     }
   });
 
@@ -49,10 +46,6 @@ export default function TodoApp() {
     }
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | done
-
-  // useEffect(() => {
-  //   localStorage.setItem("todos", JSON.stringify(todos));
-  // }, [todos]);
 
   async function addTodo() {
     const text = input.trim();
@@ -102,9 +95,42 @@ async function clearCompleted() {
 
   const remaining = todos.filter((t) => !t.done).length;
 
+  if (showResetForm) {
+  return (
+    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
+      <form onSubmit={handlePasswordUpdate} className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 w-full max-w-sm">
+        <h1 className="text-xl font-semibold text-stone-900 mb-4">Set a new password</h1>
+        <input
+          type="password"
+          placeholder="New password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          className="w-full mb-4 px-3 py-2.5 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+          required
+        />
+        <button type="submit" className="w-full bg-stone-900 text-white rounded-lg py-2.5 text-sm hover:bg-stone-700 transition-colors">
+          Update password
+        </button>
+      </form>
+    </div>
+  );
+  }
+
   if (!session) {
   return <Auth onLogin={setSession} />;
   }
+
+async function handlePasswordUpdate(e) {
+  e.preventDefault();
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) {
+    alert(error.message);
+  } else {
+    alert("Password updated! You're now logged in with your new password.");
+    setShowResetForm(false);
+    setNewPassword("");
+  }
+}
 
   return (
     <div className="min-h-screen bg-stone-100 flex items-start justify-center p-6 sm:p-10">
