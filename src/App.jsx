@@ -3,8 +3,69 @@ import { Plus, Trash2, Check, ListChecks } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import Auth from "./Auth";
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 
+function SortableTodoItem({ todo, i, filteredLength, colorOptions, toggleTodo, cycleColor, deleteTodo }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const color = colorOptions.find((c) => c.name === todo.color) || colorOptions[0];
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`group flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border} bg-white`}
+    >
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
+        aria-label="Drag to reorder"
+      >
+        ⋮⋮
+      </button>
+
+      <button
+        onClick={() => toggleTodo(todo.id)}
+        className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition ${
+          todo.done ? "bg-stone-900 border-stone-900" : "border-stone-300 hover:border-stone-500"
+        }`}
+        aria-label={todo.done ? "Mark as not done" : "Mark as done"}
+      >
+        {todo.done && <Check size={12} className="text-stone-50" />}
+      </button>
+
+      <button
+        onClick={() => cycleColor(todo.id, todo.color)}
+        className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`}
+        aria-label="Cycle priority color"
+        title="Click to change priority color"
+      />
+
+      <span className={`flex-1 text-sm ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
+        {todo.text}
+      </span>
+
+      <button
+        onClick={() => deleteTodo(todo.id)}
+        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
+        aria-label="Delete task"
+      >
+        <Trash2 size={15} />
+      </button>
+    </li>
+  );
+}
 
 export default function TodoApp() {
 
@@ -20,11 +81,35 @@ export default function TodoApp() {
   { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-400" },
   ];
 
- useEffect(() => {
-  // Check if this page load is from a password recovery link
-  if (window.location.hash.includes("type=recovery")) {
-    setShowResetForm(true);
+  const sensors = useSensors(
+  useSensor(PointerSensor),
+  useSensor(TouchSensor, {
+    activationConstraint: { delay: 150, tolerance: 5 },
+  })
+);
+
+  async function handleDragEnd(event) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = todos.findIndex((t) => t.id === active.id);
+    const newIndex = todos.findIndex((t) => t.id === over.id);
+    const newOrder = arrayMove(todos, oldIndex, newIndex);
+
+    setTodos(newOrder); // update UI instantly
+
+    // Persist new positions to Supabase
+    const updates = newOrder.map((todo, index) =>
+      supabase.from('todos').update({ position: index }).eq('id', todo.id)
+    );
+    await Promise.all(updates);
   }
+
+  useEffect(() => {
+    // Check if this page load is from a password recovery link
+    if (window.location.hash.includes("type=recovery")) {
+      setShowResetForm(true);
+    }
 
   supabase.auth.getSession().then(({ data }) => setSession(data.session));
 
@@ -102,18 +187,18 @@ async function cycleColor(id, currentColor) {
   else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
 }
 
-async function moveTodo(id, direction) {
-  const index = todos.findIndex((t) => t.id === id);
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
-  if (targetIndex < 0 || targetIndex >= todos.length) return;
+// async function moveTodo(id, direction) {
+//   const index = todos.findIndex((t) => t.id === id);
+//   const targetIndex = direction === "up" ? index - 1 : index + 1;
+//   if (targetIndex < 0 || targetIndex >= todos.length) return;
 
-  const current = todos[index];
-  const target = todos[targetIndex];
+//   const current = todos[index];
+//   const target = todos[targetIndex];
 
-  await supabase.from('todos').update({ position: target.position }).eq('id', current.id);
-  await supabase.from('todos').update({ position: current.position }).eq('id', target.id);
-  fetchTodos();
-}
+//   await supabase.from('todos').update({ position: target.position }).eq('id', current.id);
+//   await supabase.from('todos').update({ position: current.position }).eq('id', target.id);
+//   fetchTodos();
+// }
 
   const filtered = todos.filter((t) => {
     if (filter === "active") return !t.done;
@@ -223,74 +308,33 @@ async function handlePasswordUpdate(e) {
           </div>
 
           {/* List */}
-          <ul className="p-2">
-            {filtered.length === 0 && (
-              <li className="text-center text-sm text-stone-400 py-10">
-                {filter === "done"
-                  ? "Nothing completed yet."
-                  : filter === "active"
-                  ? "No active tasks. Nice work."
-                  : "Your list is empty. Add something above."}
-              </li>
-            )}
-          {filtered.map((todo, i) => {
-            const color = colorOptions.find((c) => c.name === todo.color) || colorOptions[0];
-            return (
-              <li
-                key={todo.id}
-                className={`group flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border}`}
-              >
-                <button
-                  onClick={() => toggleTodo(todo.id)}
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 transition ${
-                    todo.done ? "bg-stone-900 border-stone-900" : "border-stone-300 hover:border-stone-500"
-                  }`}
-                  aria-label={todo.done ? "Mark as not done" : "Mark as done"}
-                >
-                  {todo.done && <Check size={12} className="text-stone-50" />}
-                </button>
-
-                <button
-                  onClick={() => cycleColor(todo.id, todo.color)}
-                  className={`w-3 h-3 rounded-full flex-shrink-0 ${color.dot}`}
-                  aria-label="Cycle priority color"
-                  title="Click to change priority color"
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={filtered.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <ul className="p-2">
+              {filtered.length === 0 && (
+                <li className="text-center text-sm text-stone-400 py-10">
+                  {filter === "done"
+                    ? "Nothing completed yet."
+                    : filter === "active"
+                    ? "No active tasks. Nice work."
+                    : "Your list is empty. Add something above."}
+                </li>
+              )}
+              {filtered.map((todo, i) => (
+                <SortableTodoItem
+                  key={todo.id}
+                  todo={todo}
+                  i={i}
+                  filteredLength={filtered.length}
+                  colorOptions={colorOptions}
+                  toggleTodo={toggleTodo}
+                  cycleColor={cycleColor}
+                  deleteTodo={deleteTodo}
                 />
-
-                <span className={`flex-1 text-sm ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
-                  {todo.text}
-                </span>
-
-                <div className="flex flex-col opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition">
-                  <button
-                    onClick={() => moveTodo(todo.id, "up")}
-                    disabled={i === 0}
-                    className="text-stone-400 hover:text-stone-800 disabled:opacity-20 text-xs leading-none"
-                    aria-label="Move up"
-                  >
-                    ▲
-                  </button>
-                  <button
-                    onClick={() => moveTodo(todo.id, "down")}
-                    disabled={i === filtered.length - 1}
-                    className="text-stone-400 hover:text-stone-800 disabled:opacity-20 text-xs leading-none"
-                    aria-label="Move down"
-                  >
-                    ▼
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => deleteTodo(todo.id)}
-                  className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
-                  aria-label="Delete task"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </li>
-        );
-        })}
-          </ul>
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
           {/* Footer */}
           {todos.some((t) => t.done) && (
             <div className="px-4 py-3 border-t border-stone-100">
