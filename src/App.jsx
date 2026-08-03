@@ -8,7 +8,7 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from "@dnd-kit/utilities";
 
 
-function SortableTodoItem({ todo, i, filteredLength, colorOptions, toggleTodo, cycleColor, deleteTodo }) {
+function SortableTodoItem({ todo, colorOptions, toggleTodo, cycleColor, deleteTodo, editingId, startEdit, saveEdit, cancelEdit, editText, setEditText, editDueDate, setEditDueDate, isOverdue }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
 
   const style = {
@@ -18,6 +18,40 @@ function SortableTodoItem({ todo, i, filteredLength, colorOptions, toggleTodo, c
   };
 
   const color = colorOptions.find((c) => c.name === todo.color) || colorOptions[0];
+  const overdue = isOverdue(todo.due_date, todo.done);
+  const isEditing = editingId === todo.id;
+
+  if (isEditing) {
+    return (
+      <li
+        ref={setNodeRef}
+        style={style}
+        className={`flex flex-col gap-2 px-2 py-2.5 rounded-lg border-l-4 ${color.border} bg-stone-50`}
+      >
+        <input
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && saveEdit(todo.id)}
+          className="text-sm px-2 py-1.5 rounded-lg border border-stone-300 outline-none focus:border-stone-500"
+          autoFocus
+        />
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={editDueDate}
+            onChange={(e) => setEditDueDate(e.target.value)}
+            className="text-xs px-2 py-1 rounded-lg border border-stone-300 outline-none focus:border-stone-500"
+          />
+          <button onClick={() => saveEdit(todo.id)} className="text-xs bg-stone-900 text-white px-3 py-1 rounded-lg hover:bg-stone-700">
+            Save
+          </button>
+          <button onClick={cancelEdit} className="text-xs text-stone-400 hover:text-stone-700">
+            Cancel
+          </button>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li
@@ -25,13 +59,7 @@ function SortableTodoItem({ todo, i, filteredLength, colorOptions, toggleTodo, c
       style={style}
       className={`group flex items-center gap-2 px-2 py-2.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border} bg-white`}
     >
-      {/* Drag handle */}
-      <button
-        {...attributes}
-        {...listeners}
-        className="text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none"
-        aria-label="Drag to reorder"
-      >
+      <button {...attributes} {...listeners} className="text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none" aria-label="Drag to reorder">
         ⋮⋮
       </button>
 
@@ -52,9 +80,17 @@ function SortableTodoItem({ todo, i, filteredLength, colorOptions, toggleTodo, c
         title="Click to change priority color"
       />
 
-      <span className={`flex-1 text-sm ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
-        {todo.text}
-      </span>
+      <div className="flex-1 min-w-0" onClick={() => startEdit(todo)}>
+        <span className={`text-sm cursor-text ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
+          {todo.text}
+        </span>
+        {todo.due_date && (
+          <div className={`text-xs ${overdue ? "text-red-500 font-medium" : "text-stone-400"}`}>
+            {overdue ? "Overdue: " : "Due "}
+            {new Date(todo.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          </div>
+        )}
+      </div>
 
       <button
         onClick={() => deleteTodo(todo.id)}
@@ -73,6 +109,9 @@ export default function TodoApp() {
   const [session, setSession] = useState(null);
   const [showResetForm, setShowResetForm] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
 
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300" },
@@ -80,6 +119,12 @@ export default function TodoApp() {
   { name: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
   { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-400" },
   ];
+
+  function isOverdue(dueDate, done) {
+  if (!dueDate || done) return false;
+  const today = new Date().toISOString().split("T")[0];
+  return dueDate < today;
+  }
 
   const sensors = useSensors(
   useSensor(PointerSensor),
@@ -127,7 +172,35 @@ export default function TodoApp() {
     useEffect(() => {
       if (session) fetchTodos();
     }, [session]);
+  
+  function startEdit(todo) {
+  setEditingId(todo.id);
+  setEditText(todo.text);
+  setEditDueDate(todo.due_date || "");
+}
 
+function cancelEdit() {
+  setEditingId(null);
+  setEditText("");
+  setEditDueDate("");
+}
+
+async function saveEdit(id) {
+  const text = editText.trim();
+  if (!text) return;
+  const { error } = await supabase
+    .from('todos')
+    .update({ text, due_date: editDueDate || null })
+    .eq('id', id);
+  if (error) {
+    console.error(error);
+  } else {
+    setTodos((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, text, due_date: editDueDate || null } : t))
+    );
+    cancelEdit();
+  }
+} 
   async function fetchTodos() {
     const { data, error } = await supabase
       .from('todos')
@@ -186,19 +259,6 @@ async function cycleColor(id, currentColor) {
   if (error) console.error(error);
   else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
 }
-
-// async function moveTodo(id, direction) {
-//   const index = todos.findIndex((t) => t.id === id);
-//   const targetIndex = direction === "up" ? index - 1 : index + 1;
-//   if (targetIndex < 0 || targetIndex >= todos.length) return;
-
-//   const current = todos[index];
-//   const target = todos[targetIndex];
-
-//   await supabase.from('todos').update({ position: target.position }).eq('id', current.id);
-//   await supabase.from('todos').update({ position: current.position }).eq('id', target.id);
-//   fetchTodos();
-// }
 
   const filtered = todos.filter((t) => {
     if (filter === "active") return !t.done;
@@ -320,16 +380,23 @@ async function handlePasswordUpdate(e) {
                     : "Your list is empty. Add something above."}
                 </li>
               )}
-              {filtered.map((todo, i) => (
+              {filtered.map((todo) => (
                 <SortableTodoItem
                   key={todo.id}
                   todo={todo}
-                  i={i}
-                  filteredLength={filtered.length}
                   colorOptions={colorOptions}
                   toggleTodo={toggleTodo}
                   cycleColor={cycleColor}
                   deleteTodo={deleteTodo}
+                  editingId={editingId}
+                  startEdit={startEdit}
+                  saveEdit={saveEdit}
+                  cancelEdit={cancelEdit}
+                  editText={editText}
+                  setEditText={setEditText}
+                  editDueDate={editDueDate}
+                  setEditDueDate={setEditDueDate}
+                  isOverdue={isOverdue}
                 />
               ))}
             </ul>
