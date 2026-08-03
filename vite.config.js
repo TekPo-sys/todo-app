@@ -16,8 +16,8 @@ export default defineConfig({
         background_color: '#f5f5f4',
         display: 'standalone',
         icons: [
-          { src: 'todo-app/public/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'todo-app/public/icon-512.png', sizes: '512x512', type: 'image/png' }
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
         ]
       }
     })
