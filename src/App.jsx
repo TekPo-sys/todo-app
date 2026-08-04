@@ -121,16 +121,20 @@ function SortableTodoItem({
 
     {expandedId === todo.id && (
       <li className="pl-10 pr-2 pb-3">
-        <div className="flex items-center gap-2 mb-2">
-          <select
-            value={todo.category || "none"}
-            onChange={(e) => updateCategory(todo.id, e.target.value)}
-            className="text-xs px-2 py-1 rounded-lg border border-stone-200 outline-none"
-          >
-            {categoryOptions.map((c) => (
-              <option key={c} value={c}>{c === "none" ? "No category" : c}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+          {categoryOptions.map((c) => (
+            <button
+              key={c}
+              onClick={() => updateCategory(todo.id, c)}
+              className={`text-xs px-3 py-1.5 rounded-full transition ${
+                (todo.category || "none") === c
+                  ? "bg-stone-900 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              {c === "none" ? "No category" : c}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-1 mb-2">
