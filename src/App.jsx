@@ -30,7 +30,7 @@ function SortableTodoItem({
       <li
         ref={setNodeRef}
         style={style}
-        className={`flex flex-col gap-2 px-2 py-2.5 rounded-lg border-l-4 ${color.border} bg-stone-50`}
+        className={`group flex items-center gap-3 px-3 py-3.5 rounded-lg transition border-l-4 ${color.border} ${color.bg} hover:brightness-95`}
       >
         <input
           value={editText}
@@ -79,13 +79,6 @@ function SortableTodoItem({
       >
         {todo.done && <Check size={16} className="text-stone-50" />}
       </button>
-
-      <button
-        onClick={() => cycleColor(todo.id, todo.color)}
-        className={`w-4 h-4 rounded-full flex-shrink-0 ${color.dot}`}
-        aria-label="Cycle priority color"
-        title="Click to change priority color"
-      />
 
       <div className="flex-1 min-w-0" onClick={() => startEdit(todo)}>
         <span className={`text-base cursor-text ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
@@ -143,7 +136,22 @@ function SortableTodoItem({
             </button>
           ))}
         </div>
-
+         <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+          {colorOptions.map((c) => (
+            <button
+              key={c.name}
+              onClick={() => cycleColor(todo.id, c.name)}
+              className={`text-sm px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${
+                (todo.color || "none") === c.name
+                  ? "bg-stone-900 text-white"
+                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              }`}
+            >
+              <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
+              {c.name === "none" ? "No priority" : c.name.charAt(0).toUpperCase() + c.name.slice(1)}
+            </button>
+          ))}
+        </div>
         <div className="space-y-1 mb-2">
           {(subtasks[todo.id] || []).map((s) => (
             <div key={s.id} className="flex items-center gap-2 group/sub">
@@ -167,7 +175,6 @@ function SortableTodoItem({
             </div>
           ))}
         </div>
-
         <div className="flex items-center gap-2">
           <input
             value={newSubtaskText}
@@ -205,11 +212,11 @@ export default function TodoApp() {
   const [newSubtaskText, setNewSubtaskText] = useState("");
 
   const colorOptions = [
-  { name: "none", dot: "bg-stone-300", border: "border-l-stone-300" },
-  { name: "red", dot: "bg-red-400", border: "border-l-red-400" },
-  { name: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
-  { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-400" },
-  ];
+  { name: "none", dot: "bg-stone-300", border: "border-l-stone-300", bg: "bg-white" },
+  { name: "red", dot: "bg-red-400", border: "border-l-red-500", bg: "bg-red-50" },
+  { name: "yellow", dot: "bg-amber-400", border: "border-l-amber-500", bg: "bg-amber-50" },
+  { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-500", bg: "bg-emerald-50" },
+];
 
   const categoryOptions = ["none", "Work", "Personal", "Shopping", "Health"];
 
@@ -397,12 +404,18 @@ async function clearCompleted() {
   else setTodos((prev) => prev.filter((t) => !t.done));
 }
 
-async function cycleColor(id, currentColor) {
-  const idx = colorOptions.findIndex((c) => c.name === currentColor);
-  const next = colorOptions[(idx + 1) % colorOptions.length].name;
-  const { error } = await supabase.from('todos').update({ color: next }).eq('id', id);
+// async function cycleColor(id, currentColor) {
+//   const idx = colorOptions.findIndex((c) => c.name === currentColor);
+//   const next = colorOptions[(idx + 1) % colorOptions.length].name;
+//   const { error } = await supabase.from('todos').update({ color: next }).eq('id', id);
+//   if (error) console.error(error);
+//   else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
+// }
+
+async function cycleColor(id, color) {
+  const { error } = await supabase.from('todos').update({ color }).eq('id', id);
   if (error) console.error(error);
-  else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
+  else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color } : t)));
 }
 
   const filtered = todos.filter((t) => {
