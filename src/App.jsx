@@ -8,7 +8,11 @@ import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } 
 import { CSS } from "@dnd-kit/utilities";
 
 
-function SortableTodoItem({ todo, colorOptions, toggleTodo, cycleColor, deleteTodo, editingId, startEdit, saveEdit, cancelEdit, editText, setEditText, editDueDate, setEditDueDate, isOverdue }) {
+function SortableTodoItem({
+  todo, colorOptions, categoryOptions, toggleTodo, cycleColor, deleteTodo,
+  editingId, startEdit, saveEdit, cancelEdit, editText, setEditText, editDueDate, setEditDueDate, isOverdue,
+  updateCategory, subtasks, expandedId, setExpandedId, newSubtaskText, setNewSubtaskText, addSubtask, toggleSubtask, deleteSubtask,
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
 
   const style = {
@@ -54,6 +58,7 @@ function SortableTodoItem({ todo, colorOptions, toggleTodo, cycleColor, deleteTo
   }
 
   return (
+  <>
     <li
       ref={setNodeRef}
       style={style}
@@ -90,7 +95,20 @@ function SortableTodoItem({ todo, colorOptions, toggleTodo, cycleColor, deleteTo
             {new Date(todo.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </div>
         )}
+        {todo.category && todo.category !== "none" && (
+          <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 mt-1">
+            {todo.category}
+          </span>
+        )}
       </div>
+      <button
+        onClick={() => setExpandedId(expandedId === todo.id ? null : todo.id)}
+        className="text-stone-400 hover:text-stone-700 text-xs flex-shrink-0"
+        aria-label="Toggle subtasks"
+      >
+        {(subtasks[todo.id]?.length || 0) > 0 && `${subtasks[todo.id].filter(s => s.done).length}/${subtasks[todo.id].length}`}
+        {" "}▾
+      </button>
 
       <button
         onClick={() => deleteTodo(todo.id)}
@@ -100,6 +118,63 @@ function SortableTodoItem({ todo, colorOptions, toggleTodo, cycleColor, deleteTo
         <Trash2 size={15} />
       </button>
     </li>
+
+    {expandedId === todo.id && (
+      <li className="pl-10 pr-2 pb-3">
+        <div className="flex items-center gap-2 mb-2">
+          <select
+            value={todo.category || "none"}
+            onChange={(e) => updateCategory(todo.id, e.target.value)}
+            className="text-xs px-2 py-1 rounded-lg border border-stone-200 outline-none"
+          >
+            {categoryOptions.map((c) => (
+              <option key={c} value={c}>{c === "none" ? "No category" : c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1 mb-2">
+          {(subtasks[todo.id] || []).map((s) => (
+            <div key={s.id} className="flex items-center gap-2 group/sub">
+              <button
+                onClick={() => toggleSubtask(todo.id, s.id, s.done)}
+                className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                  s.done ? "bg-stone-900 border-stone-900" : "border-stone-300"
+                }`}
+              >
+                {s.done && <Check size={10} className="text-stone-50" />}
+              </button>
+              <span className={`text-xs flex-1 ${s.done ? "text-stone-400 line-through" : "text-stone-700"}`}>
+                {s.text}
+              </span>
+              <button
+                onClick={() => deleteSubtask(todo.id, s.id)}
+                className="opacity-0 group-hover/sub:opacity-100 text-stone-300 hover:text-red-500"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            value={newSubtaskText}
+            onChange={(e) => setNewSubtaskText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addSubtask(todo.id)}
+            placeholder="Add a subtask"
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+          />
+          <button
+            onClick={() => addSubtask(todo.id)}
+            className="text-xs bg-stone-900 text-white px-2 py-1.5 rounded-lg hover:bg-stone-700"
+          >
+            Add
+          </button>
+        </div>
+      </li>
+     )}  
+   </> 
   );
 }
 
@@ -113,12 +188,19 @@ export default function TodoApp() {
   const [editText, setEditText] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
 
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [subtasks, setSubtasks] = useState({}); // { todoId: [subtask, ...] }
+  const [expandedId, setExpandedId] = useState(null);
+  const [newSubtaskText, setNewSubtaskText] = useState("");
+
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300" },
   { name: "red", dot: "bg-red-400", border: "border-l-red-400" },
   { name: "yellow", dot: "bg-amber-400", border: "border-l-amber-400" },
   { name: "green", dot: "bg-emerald-400", border: "border-l-emerald-400" },
   ];
+
+  const categoryOptions = ["none", "Work", "Personal", "Shopping", "Health"];
 
   function isOverdue(dueDate, done) {
   if (!dueDate || done) return false;
@@ -202,12 +284,25 @@ async function saveEdit(id) {
   }
 } 
   async function fetchTodos() {
-    const { data, error } = await supabase
-      .from('todos')
-      .select('*')
-      .order('position', { ascending: true });
-    if (error) console.error(error);
-    else setTodos(data);
+  const { data, error } = await supabase
+    .from('todos')
+    .select('*')
+    .order('position', { ascending: true });
+  if (error) { console.error(error); return; }
+  setTodos(data);
+
+  const { data: subData, error: subError } = await supabase
+    .from('subtasks')
+    .select('*')
+    .order('position', { ascending: true });
+  if (subError) { console.error(subError); return; }
+
+  const grouped = {};
+  subData.forEach((s) => {
+    if (!grouped[s.todo_id]) grouped[s.todo_id] = [];
+    grouped[s.todo_id].push(s);
+  });
+  setSubtasks(grouped);
 }
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | done
@@ -232,6 +327,45 @@ async function toggleTodo(id) {
     .eq('id', id);
   if (error) console.error(error);
   else fetchTodos();
+}
+
+async function updateCategory(id, category) {
+  const { error } = await supabase.from('todos').update({ category }).eq('id', id);
+  if (error) console.error(error);
+  else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, category } : t)));
+}
+
+async function addSubtask(todoId) {
+  const text = newSubtaskText.trim();
+  if (!text) return;
+  const { data, error } = await supabase
+    .from('subtasks')
+    .insert([{ todo_id: todoId, text, done: false, user_id: session.user.id }])
+    .select();
+  if (error) { console.error(error); return; }
+  setSubtasks((prev) => ({
+    ...prev,
+    [todoId]: [...(prev[todoId] || []), data[0]],
+  }));
+  setNewSubtaskText("");
+}
+
+async function toggleSubtask(todoId, subtaskId, done) {
+  const { error } = await supabase.from('subtasks').update({ done: !done }).eq('id', subtaskId);
+  if (error) { console.error(error); return; }
+  setSubtasks((prev) => ({
+    ...prev,
+    [todoId]: prev[todoId].map((s) => (s.id === subtaskId ? { ...s, done: !done } : s)),
+  }));
+}
+
+async function deleteSubtask(todoId, subtaskId) {
+  const { error } = await supabase.from('subtasks').delete().eq('id', subtaskId);
+  if (error) { console.error(error); return; }
+  setSubtasks((prev) => ({
+    ...prev,
+    [todoId]: prev[todoId].filter((s) => s.id !== subtaskId),
+  }));
 }
 
 async function deleteTodo(id) {
@@ -261,10 +395,11 @@ async function cycleColor(id, currentColor) {
 }
 
   const filtered = todos.filter((t) => {
-    if (filter === "active") return !t.done;
-    if (filter === "done") return t.done;
-    return true;
-  });
+  if (filter === "active" && t.done) return false;
+  if (filter === "done" && !t.done) return false;
+  if (categoryFilter !== "all" && t.category !== categoryFilter) return false;
+  return true;
+});
 
   const remaining = todos.filter((t) => !t.done).length;
 
@@ -347,21 +482,35 @@ async function handlePasswordUpdate(e) {
 
           {/* Filters */}
           <div className="flex items-center justify-between px-4 pt-3">
-            <div className="flex gap-1">
-              {["all", "active", "done"].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`text-xs px-2.5 py-1 rounded-full capitalize transition ${
-                    filter === f
-                      ? "bg-stone-900 text-stone-50"
-                      : "text-stone-500 hover:bg-stone-100"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {["all", "active", "done"].map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`text-xs px-2.5 py-1 rounded-full capitalize transition ${
+                      filter === f
+                        ? "bg-stone-900 text-stone-50"
+                        : "text-stone-500 hover:bg-stone-100"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="text-xs px-2 py-1 rounded-full bg-stone-100 text-stone-600 border-none outline-none"
+              >
+                <option value="all">All categories</option>
+                {categoryOptions.filter((c) => c !== "none").map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
+
             <span className="text-xs text-stone-400">
               {remaining} left
             </span>
@@ -385,6 +534,7 @@ async function handlePasswordUpdate(e) {
                   key={todo.id}
                   todo={todo}
                   colorOptions={colorOptions}
+                  categoryOptions={categoryOptions}
                   toggleTodo={toggleTodo}
                   cycleColor={cycleColor}
                   deleteTodo={deleteTodo}
@@ -397,6 +547,15 @@ async function handlePasswordUpdate(e) {
                   editDueDate={editDueDate}
                   setEditDueDate={setEditDueDate}
                   isOverdue={isOverdue}
+                  updateCategory={updateCategory}
+                  subtasks={subtasks}
+                  expandedId={expandedId}
+                  setExpandedId={setExpandedId}
+                  newSubtaskText={newSubtaskText}
+                  setNewSubtaskText={setNewSubtaskText}
+                  addSubtask={addSubtask}
+                  toggleSubtask={toggleSubtask}
+                  deleteSubtask={deleteSubtask}
                 />
               ))}
             </ul>
