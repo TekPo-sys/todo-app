@@ -97,26 +97,31 @@ function SortableTodoItem({
             {new Date(todo.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </div>
         )}
-        {todo.category && todo.category !== "none" && (
-          <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500 mt-1">
-            {todo.category}
-          </span>
-        )}
+        <div className="flex items-center gap-2 mt-1.5">
+          {todo.category && todo.category !== "none" && (
+            <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500">
+              {todo.category}
+            </span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedId(expandedId === todo.id ? null : todo.id);
+            }}
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
+            aria-label="Toggle subtasks"
+          >
+            {(subtasks[todo.id]?.length || 0) > 0
+              ? `${subtasks[todo.id].filter(s => s.done).length}/${subtasks[todo.id].length} subtasks`
+              : "Subtasks"}
+            <span className={`transition-transform ${expandedId === todo.id ? "rotate-180" : ""}`}>▾</span>
+          </button>
+        </div>
       </div>
-      <button
-        onClick={() => setExpandedId(expandedId === todo.id ? null : todo.id)}
-        className="text-stone-400 hover:text-stone-700 text-sm flex-shrink-0 px-1"
-        aria-label="Toggle subtasks"
-      >
-        {(subtasks[todo.id]?.length || 0) > 0 && `${subtasks[todo.id].filter(s => s.done).length}/${subtasks[todo.id].length}`}
-        {" "}▾
-      </button>
-
       <button
         onClick={() => deleteTodo(todo.id)}
         className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
-        aria-label="Delete task"
-      >
+        aria-label="Delete task">
         <Trash2 size={18} />
       </button>
     </li>
