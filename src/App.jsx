@@ -62,7 +62,7 @@ function SortableTodoItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-3 px-3 py-3.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border} bg-white`}
+      className={`group flex items-center gap-3 px-3 py-3.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border} ${color.bg} hover:brightness-95`}
     >
     {/* Drag handle */}
       <button {...attributes} {...listeners} className="text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none text-lg px-1">
