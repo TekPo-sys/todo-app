@@ -502,22 +502,29 @@ async function cycleColor(id, color) {
 });
 
 async function fetchLists() {
-  // Step 1: get the list_ids this user belongs to
   const { data: memberRows, error: memberError } = await supabase
     .from('list_members')
     .select('list_id')
     .eq('user_id', session.user.id);
 
+  console.log("memberRows:", memberRows);
+  console.log("memberError:", JSON.stringify(memberError));
+
   if (memberError) { console.error(memberError); return; }
 
   const listIds = memberRows.map((m) => m.list_id);
-  if (listIds.length === 0) return;
+  if (listIds.length === 0) {
+    console.log("No list_ids found for this user");
+    return;
+  }
 
-  // Step 2: get the actual list details
   const { data: listData, error: listError } = await supabase
     .from('lists')
     .select('*')
     .in('id', listIds);
+
+  console.log("listData:", listData);
+  console.log("listError:", JSON.stringify(listError));
 
   if (listError) { console.error(listError); return; }
 
