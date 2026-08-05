@@ -507,24 +507,15 @@ async function fetchLists() {
     .select('list_id')
     .eq('user_id', session.user.id);
 
-  console.log("memberRows:", memberRows);
-  console.log("memberError:", JSON.stringify(memberError));
-
   if (memberError) { console.error(memberError); return; }
 
   const listIds = memberRows.map((m) => m.list_id);
-  if (listIds.length === 0) {
-    console.log("No list_ids found for this user");
-    return;
-  }
+  if (listIds.length === 0) return;
 
   const { data: listData, error: listError } = await supabase
     .from('lists')
     .select('*')
     .in('id', listIds);
-
-  console.log("listData:", listData);
-  console.log("listError:", JSON.stringify(listError));
 
   if (listError) { console.error(listError); return; }
 
