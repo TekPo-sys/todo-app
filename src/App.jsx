@@ -254,6 +254,9 @@ export default function TodoApp() {
   const [expandedId, setExpandedId] = useState(null);
   const [detailsOpenId, setDetailsOpenId] = useState(null);
   const [newSubtaskText, setNewSubtaskText] = useState("");
+  const [lists, setLists] = useState([]);
+  const [currentListId, setCurrentListId] = useState(null);
+  const [newListName, setNewListName] = useState("");
 
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300", bg: "bg-white" },
@@ -320,6 +323,10 @@ export default function TodoApp() {
     fetchCustomCategories();
     }
   }, [session]);
+
+  useEffect(() => {
+  if (currentListId) fetchTodos();
+}, [currentListId]);
   
   function startEdit(todo) {
   setEditingId(todo.id);
@@ -381,6 +388,7 @@ async function fetchTodos() {
   const { data, error } = await supabase
     .from('todos')
     .select('*')
+    .eq('list_id', currentListId)
     .order('position', { ascending: true });
   if (error) { console.error(error); return; }
   setTodos(data);
@@ -401,17 +409,17 @@ async function fetchTodos() {
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState("all"); // all | active | done
 
-  async function addTodo() {
-    const text = input.trim();
-    if (!text) return;
-    const { data, error } = await supabase
-      .from('todos')
-      .insert([{ text, done: false, user_id: session.user.id }])
-      .select();
-    if (error) console.error(error);
-    else setTodos((prev) => [data[0], ...prev]);
-    setInput("");
-  }
+async function addTodo() {
+  const text = input.trim();
+  if (!text) return;
+  const { data, error } = await supabase
+    .from('todos')
+    .insert([{ text, done: false, user_id: session.user.id, list_id: currentListId }])
+    .select();
+  if (error) console.error(error);
+  else setTodos((prev) => [data[0], ...prev]);
+  setInput("");
+}
 
 async function toggleTodo(id) {
   const todo = todos.find((t) => t.id === id);
@@ -480,14 +488,6 @@ async function clearCompleted() {
   else setTodos((prev) => prev.filter((t) => !t.done));
 }
 
-// async function cycleColor(id, currentColor) {
-//   const idx = colorOptions.findIndex((c) => c.name === currentColor);
-//   const next = colorOptions[(idx + 1) % colorOptions.length].name;
-//   const { error } = await supabase.from('todos').update({ color: next }).eq('id', id);
-//   if (error) console.error(error);
-//   else setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, color: next } : t)));
-// }
-
 async function cycleColor(id, color) {
   const { error } = await supabase.from('todos').update({ color }).eq('id', id);
   if (error) console.error(error);
@@ -500,6 +500,34 @@ async function cycleColor(id, color) {
   if (categoryFilter !== "all" && t.category !== categoryFilter) return false;
   return true;
 });
+
+async function fetchLists() {
+  const { data, error } = await supabase
+    .from('lists')
+    .select('*, list_members!inner(user_id)')
+    .eq('list_members.user_id', session.user.id);
+  if (error) { console.error(error); return; }
+  setLists(data);
+  if (data.length > 0 && !currentListId) setCurrentListId(data[0].id);
+}
+
+async function createList() {
+  const name = newListName.trim();
+  if (!name) return;
+  const { data, error } = await supabase
+    .from('lists')
+    .insert([{ name, owner_id: session.user.id }])
+    .select();
+  if (error) { console.error(error); return; }
+
+  await supabase.from('list_members').insert([
+    { list_id: data[0].id, user_id: session.user.id, role: 'owner' }
+  ]);
+
+  setLists((prev) => [...prev, data[0]]);
+  setCurrentListId(data[0].id);
+  setNewListName("");
+}
 
   const remaining = todos.filter((t) => !t.done).length;
 
@@ -560,6 +588,32 @@ async function handlePasswordUpdate(e) {
           Log out
         </button>
       </div>
+
+      <div className="flex items-center gap-2 mb-4">
+        <select
+          value={currentListId || ""}
+          onChange={(e) => setCurrentListId(Number(e.target.value))}
+          className="text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white outline-none"
+        >
+          {lists.map((l) => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
+        </select>
+        <input
+          value={newListName}
+          onChange={(e) => setNewListName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && createList()}
+          placeholder="New list name..."
+          className="flex-1 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
+        />
+        <button
+          onClick={createList}
+          className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700"
+        >
+          Create
+        </button>
+      </div>
+      
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           {/* Input */}
