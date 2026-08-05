@@ -319,7 +319,7 @@ export default function TodoApp() {
 // Load todos from Supabase on first render
   useEffect(() => {
    if (session) {
-    fetchTodos();
+    fetchLists();
     fetchCustomCategories();
     }
   }, [session]);
@@ -502,13 +502,29 @@ async function cycleColor(id, color) {
 });
 
 async function fetchLists() {
-  const { data, error } = await supabase
+  // Step 1: get the list_ids this user belongs to
+  const { data: memberRows, error: memberError } = await supabase
+    .from('list_members')
+    .select('list_id')
+    .eq('user_id', session.user.id);
+
+  if (memberError) { console.error(memberError); return; }
+
+  const listIds = memberRows.map((m) => m.list_id);
+  if (listIds.length === 0) return;
+
+  // Step 2: get the actual list details
+  const { data: listData, error: listError } = await supabase
     .from('lists')
-    .select('*, list_members!inner(user_id)')
-    .eq('list_members.user_id', session.user.id);
-  if (error) { console.error(error); return; }
-  setLists(data);
-  if (data.length > 0 && !currentListId) setCurrentListId(data[0].id);
+    .select('*')
+    .in('id', listIds);
+
+  if (listError) { console.error(listError); return; }
+
+  setLists(listData);
+  if (listData.length > 0 && !currentListId) {
+    setCurrentListId(listData[0].id);
+  }
 }
 
 async function createList() {
@@ -613,7 +629,7 @@ async function handlePasswordUpdate(e) {
           Create
         </button>
       </div>
-      
+
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           {/* Input */}
