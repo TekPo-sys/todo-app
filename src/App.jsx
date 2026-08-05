@@ -258,6 +258,9 @@ export default function TodoApp() {
   const [currentListId, setCurrentListId] = useState(null);
   const [newListName, setNewListName] = useState("");
 
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300", bg: "bg-white" },
   { name: "red", dot: "bg-red-400", border: "border-l-red-500", bg: "bg-red-50" },
@@ -543,6 +546,25 @@ async function createList() {
   setNewListName("");
 }
 
+async function inviteToList() {
+  const email = inviteEmail.trim();
+  if (!email || !currentListId) return;
+
+  const { data, error } = await supabase.rpc('invite_to_list', {
+    target_list_id: currentListId,
+    invitee_email: email,
+  });
+
+  if (error) {
+    setInviteMessage("Something went wrong. Try again.");
+  } else if (data.startsWith("error")) {
+    setInviteMessage(data.replace("error: ", ""));
+  } else {
+    setInviteMessage(`Invited ${email} successfully!`);
+    setInviteEmail("");
+  }
+}
+
   const remaining = todos.filter((t) => !t.done).length;
 
   if (showResetForm) {
@@ -627,7 +649,26 @@ async function handlePasswordUpdate(e) {
           Create
         </button>
       </div>
-
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && inviteToList()}
+          placeholder="Invite by email..."
+          type="email"
+          className="flex-1 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
+        />
+        <button
+          onClick={inviteToList}
+          className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700"
+        >
+          Invite
+        </button>
+      </div>
+      {inviteMessage && (
+        <p className="text-sm text-stone-500 mb-4">{inviteMessage}</p>
+      )}
+      
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           {/* Input */}
