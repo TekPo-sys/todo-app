@@ -12,6 +12,7 @@ function SortableTodoItem({
   todo, colorOptions, categoryOptions, toggleTodo, cycleColor, deleteTodo,
   editingId, startEdit, saveEdit, cancelEdit, editText, setEditText, editDueDate, setEditDueDate, isOverdue,
   updateCategory, subtasks, expandedId, setExpandedId, newSubtaskText, setNewSubtaskText, addSubtask, toggleSubtask, deleteSubtask,
+  allCategories, newCategoryText, setNewCategoryText, addCustomCategory,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: todo.id });
 
@@ -121,8 +122,8 @@ function SortableTodoItem({
 
     {expandedId === todo.id && (
       <li className="pl-10 pr-2 pb-3">
-        <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-          {categoryOptions.map((c) => (
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          {allCategories.map((c) => (
             <button
               key={c}
               onClick={() => updateCategory(todo.id, c)}
@@ -136,21 +137,21 @@ function SortableTodoItem({
             </button>
           ))}
         </div>
-         <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-          {colorOptions.map((c) => (
-            <button
-              key={c.name}
-              onClick={() => cycleColor(todo.id, c.name)}
-              className={`text-sm px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${
-                (todo.color || "none") === c.name
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-              }`}
-            >
-              <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
-              {c.name === "none" ? "No priority" : c.name.charAt(0).toUpperCase() + c.name.slice(1)}
-            </button>
-          ))}
+
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            value={newCategoryText}
+            onChange={(e) => setNewCategoryText(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addCustomCategory()}
+            placeholder="New category..."
+            className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+          />
+          <button
+            onClick={addCustomCategory}
+            className="text-sm bg-stone-100 text-stone-600 px-3 py-1.5 rounded-lg hover:bg-stone-200"
+          >
+            Add
+          </button>
         </div>
         <div className="space-y-1 mb-2">
           {(subtasks[todo.id] || []).map((s) => (
@@ -205,6 +206,8 @@ export default function TodoApp() {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
+  const [customCategories, setCustomCategories] = useState([]);
+  const [newCategoryText, setNewCategoryText] = useState("");
 
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subtasks, setSubtasks] = useState({}); // { todoId: [subtask, ...] }
@@ -219,6 +222,7 @@ export default function TodoApp() {
 ];
 
   const categoryOptions = ["none", "Work", "Personal", "Shopping", "Health"];
+  const allCategories = ["none", ...categoryOptions.filter((c) => c !== "none"), ...customCategories.map((c) => c.name)];
 
   function isOverdue(dueDate, done) {
   if (!dueDate || done) return false;
@@ -269,9 +273,12 @@ export default function TodoApp() {
 }, []);
 
 // Load todos from Supabase on first render
-    useEffect(() => {
-      if (session) fetchTodos();
-    }, [session]);
+  useEffect(() => {
+   if (session) {
+    fetchTodos();
+    fetchCustomCategories();
+    }
+  }, [session]);
   
   function startEdit(todo) {
   setEditingId(todo.id);
@@ -301,7 +308,35 @@ async function saveEdit(id) {
     cancelEdit();
   }
 } 
-  async function fetchTodos() {
+
+async function fetchCustomCategories() {
+  const { data, error } = await supabase
+    .from('custom_categories')
+    .select('*')
+    .order('name', { ascending: true });
+  if (error) console.error(error);
+  else setCustomCategories(data);
+}
+
+async function addCustomCategory() {
+  const name = newCategoryText.trim();
+  if (!name) return;
+  const { data, error } = await supabase
+    .from('custom_categories')
+    .insert([{ name, user_id: session.user.id }])
+    .select();
+  if (error) console.error(error);
+  else setCustomCategories((prev) => [...prev, data[0]]);
+  setNewCategoryText("");
+}
+
+async function deleteCustomCategory(id) {
+  const { error } = await supabase.from('custom_categories').delete().eq('id', id);
+  if (error) console.error(error);
+  else setCustomCategories((prev) => prev.filter((c) => c.id !== id));
+}
+
+async function fetchTodos() {
   const { data, error } = await supabase
     .from('todos')
     .select('*')
@@ -529,7 +564,7 @@ async function handlePasswordUpdate(e) {
                 className="text-sm px-2 py-1 rounded-full bg-stone-100 text-stone-600 border-none outline-none"
               >
                 <option value="all">All categories</option>
-                {categoryOptions.filter((c) => c !== "none").map((c) => (
+                {allCategories.filter((c) => c !== "none").map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
@@ -580,6 +615,10 @@ async function handlePasswordUpdate(e) {
                   addSubtask={addSubtask}
                   toggleSubtask={toggleSubtask}
                   deleteSubtask={deleteSubtask}
+                  allCategories={allCategories}
+                  newCategoryText={newCategoryText}
+                  setNewCategoryText={setNewCategoryText}
+                  addCustomCategory={addCustomCategory}
                 />
               ))}
             </ul>
