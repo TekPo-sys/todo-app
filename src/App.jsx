@@ -531,6 +531,9 @@ async function fetchLists() {
 async function createList() {
   const name = newListName.trim();
   if (!name) return;
+
+  console.log("session:", session);
+  console.log("session.user.id:", session?.user?.id);
   const { data, error } = await supabase
     .from('lists')
     .insert([{ name, owner_id: session.user.id }])
