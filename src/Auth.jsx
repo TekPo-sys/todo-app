@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -9,16 +9,31 @@ export default function Auth({ onLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setLoading(true);
     const { error } = isSignUp
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+    } else {
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
+    }
   }
 
   async function handleResetPassword() {
@@ -48,6 +63,7 @@ export default function Auth({ onLogin }) {
 
         <input
           type="email"
+          autoComplete="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -57,6 +73,7 @@ export default function Auth({ onLogin }) {
         <div className="relative mb-4">
           <input
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -74,6 +91,15 @@ export default function Auth({ onLogin }) {
         </div>
 
         {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+        <label className="flex items-center gap-2 mb-4 text-sm text-stone-600">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-stone-300"
+          />
+          Remember my email
+        </label>
 
         <button
           type="submit"
