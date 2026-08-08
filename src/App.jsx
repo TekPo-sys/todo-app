@@ -247,6 +247,7 @@ export default function TodoApp() {
   const [editDueDate, setEditDueDate] = useState("");
   const [customCategories, setCustomCategories] = useState([]);
   const [newCategoryText, setNewCategoryText] = useState("");
+  const [listStats, setListStats] = useState({}); // { listId: { total, done } }
 
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subtasks, setSubtasks] = useState({}); // { todoId: [subtask, ...] }
@@ -256,6 +257,16 @@ export default function TodoApp() {
   const [lists, setLists] = useState([]);
   const [currentListId, setCurrentListId] = useState(null);
   const [newListName, setNewListName] = useState("");
+
+  const [view, setView] = useState("lists"); // "lists" | "tasks"
+  const [showCreateList, setShowCreateList] = useState(false);
+  const cardColors = [
+    "bg-emerald-100 text-emerald-800",
+    "bg-rose-100 text-rose-800",
+    "bg-sky-100 text-sky-800",
+    "bg-amber-100 text-amber-800",
+    "bg-violet-100 text-violet-800",
+  ];
 
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300", bg: "bg-white" },
@@ -427,7 +438,10 @@ async function toggleTodo(id) {
     .update({ done: !todo.done })
     .eq('id', id);
   if (error) console.error(error);
-  else fetchTodos();
+  else {
+    fetchTodos();
+    fetchListStats(lists.map((l) => l.id));
+  }
 }
 
 async function updateCategory(id, category) {
@@ -500,6 +514,23 @@ async function cycleColor(id, color) {
   return true;
 });
 
+async function fetchListStats(listIds) {
+  if (!listIds || listIds.length === 0) return;
+  const { data, error } = await supabase
+    .from('todos')
+    .select('list_id, done')
+    .in('list_id', listIds);
+  if (error) { console.error(error); return; }
+
+  const stats = {};
+  data.forEach((t) => {
+    if (!stats[t.list_id]) stats[t.list_id] = { total: 0, done: 0 };
+    stats[t.list_id].total += 1;
+    if (t.done) stats[t.list_id].done += 1;
+  });
+  setListStats(stats);
+}
+
 async function fetchLists() {
   const { data: memberRows, error: memberError } = await supabase
     .from('list_members')
@@ -519,6 +550,7 @@ async function fetchLists() {
   if (listError) { console.error(listError); return; }
 
   setLists(listData);
+  fetchListStats(listData.map((l) => l.id));
   if (listData.length > 0 && !currentListId) {
     setCurrentListId(listData[0].id);
   }
@@ -540,6 +572,8 @@ async function createList() {
   setLists((prev) => [...prev, data[0]]);
   setCurrentListId(data[0].id);
   setNewListName("");
+  setShowCreateList(false);
+  setView("tasks");
 }
 
   const remaining = todos.filter((t) => !t.done).length;
@@ -584,23 +618,99 @@ async function handlePasswordUpdate(e) {
   }
 }
 
+  if (view === "lists") {
+    return (
+      <div className="min-h-screen bg-orange-50 p-4 pb-24 relative">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-3xl font-bold text-stone-800">Tasks</h1>
+          <button
+            onClick={() => supabase.auth.signOut()}
+            className="text-sm text-stone-400"
+          >
+            Log out
+          </button>
+        </div>
+        <p className="text-sm text-stone-500 mb-6">Your lists, all in one place.</p>
+
+        <div className="flex flex-col gap-3">
+          {lists.map((l, i) => {
+            const stats = listStats[l.id] || { total: 0, done: 0 };
+            return (
+              <button
+                key={l.id}
+                onClick={() => { setCurrentListId(l.id); setView("tasks"); }}
+                className={`text-left p-4 rounded-2xl transition active:scale-[0.98] ${cardColors[i % cardColors.length]}`}
+              >
+                <div className="font-semibold text-lg">{l.name}</div>
+                <div className="text-sm opacity-70">{stats.done} of {stats.total} tasks</div>
+              </button>
+            );
+          })}
+          {lists.length === 0 && (
+            <p className="text-sm text-stone-400 text-center py-10">
+              No lists yet — tap + to create one.
+            </p>
+          )}
+        </div>
+
+        {/* Floating create button */}
+        <button
+          onClick={() => setShowCreateList(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-emerald-700 text-white text-2xl flex items-center justify-center shadow-lg active:scale-95 transition"
+          aria-label="Create new list"
+        >
+          <Plus size={28} />
+        </button>
+
+        {/* Create list overlay */}
+        {showCreateList && (
+          <div className="fixed inset-0 bg-black/30 flex items-end justify-center z-50">
+            <div className="bg-white rounded-t-2xl p-5 w-full max-w-md">
+              <h2 className="text-lg font-semibold text-stone-800 mb-3">New list</h2>
+              <input
+                value={newListName}
+                onChange={(e) => setNewListName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && createList()}
+                placeholder="List name..."
+                autoFocus
+                className="w-full text-base px-3 py-2.5 rounded-lg border border-orange-100 outline-none mb-3"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={createList}
+                  className="flex-1 bg-emerald-700 text-white py-2.5 rounded-lg text-sm"
+                >
+                  Create
+                </button>
+                <button
+                  onClick={() => { setShowCreateList(false); setNewListName(""); }}
+                  className="flex-1 bg-stone-100 text-stone-600 py-2.5 rounded-lg text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-orange-50 flex items-start justify-center p-3">
       <div className="w-full max-w-md">
         {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center flex-shrink-0">
-            <ListChecks size={20} className="text-stone-50" />
-          </div>
-          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">
-            To-do list
-          </h1>
-        </div>
         <button
-          onClick={() => supabase.auth.signOut()}
-          className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
+          onClick={() => setView("lists")}
+          className="flex items-center gap-2 text-stone-600"
         >
+          <span className="text-xl">‹</span>
+          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">
+            {lists.find((l) => l.id === currentListId)?.name || "Tasks"}
+          </h1>
+        </button>
+        <button onClick={() => supabase.auth.signOut()} className="text-sm text-stone-400 hover:text-stone-700 transition-colors">
           Log out
         </button>
       </div>
@@ -619,7 +729,7 @@ async function handlePasswordUpdate(e) {
         </div>
       )}
 
-      <div className="flex flex-col gap-2 mb-4">
+      {/* <div className="flex flex-col gap-2 mb-4">
         <select
           value={currentListId || ""}
           onChange={(e) => setCurrentListId(Number(e.target.value))}
@@ -644,7 +754,7 @@ async function handlePasswordUpdate(e) {
             Create
           </button>
         </div>
-      </div>  
+      </div>   */}
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
           {/* Input */}
