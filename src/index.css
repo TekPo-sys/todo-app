@@ -111,3 +111,6 @@ code {
 } */
 
 @import "tailwindcss";
+body {
+  font-family: 'Nunito', sans-serif;
+}

@@ -50,13 +50,13 @@ function SortableTodoItem({
         <div className="flex items-center gap-2">
           <button
             onClick={() => saveEdit(todo.id)}
-            className="flex-1 text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700"
+            className="flex-1 text-sm bg-emerald-700 text-white px-3 py-2 rounded-lg hover:bg-emerald-800"
           >
             Save
           </button>
           <button
             onClick={cancelEdit}
-            className="flex-1 text-sm bg-stone-100 text-stone-500 px-3 py-2 rounded-lg hover:bg-stone-200"
+            className="flex-1 text-sm bg-orange-50 text-stone-500 px-3 py-2 rounded-lg hover:bg-stone-200"
           >
             Cancel
           </button>
@@ -70,7 +70,7 @@ function SortableTodoItem({
     <li
       ref={setNodeRef}
       style={style}
-      className={`group flex items-center gap-3 px-3 py-3.5 rounded-lg hover:bg-stone-50 transition border-l-4 ${color.border} ${color.bg} hover:brightness-95`}
+      className={`group flex items-center gap-3 px-3 py-3.5 rounded-lg hover:bg-orange-50/50 transition border-l-4 ${color.border} ${color.bg} hover:brightness-95`}
     >
     {/* Drag handle */}
       <button {...attributes} {...listeners} className="text-stone-300 hover:text-stone-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none text-lg px-1">
@@ -81,7 +81,7 @@ function SortableTodoItem({
       <button
         onClick={() => toggleTodo(todo.id)}
         className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${
-          todo.done ? "bg-stone-900 border-stone-900" : "border-stone-300 hover:border-stone-500"
+          todo.done ? "bg-emerald-700 border-emerald-700" : "border-stone-300 hover:border-stone-500"
         }`}
         aria-label={todo.done ? "Mark as not done" : "Mark as done"}
       >
@@ -105,20 +105,20 @@ function SortableTodoItem({
         </div>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {todo.category && todo.category !== "none" && (
-            <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500">
+            <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-orange-50 text-stone-500">
               {todo.category}
             </span>
           )}
           <button
             onClick={() => setDetailsOpenId(detailsOpenId === todo.id ? null : todo.id)}
-            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-orange-50 text-stone-600 hover:bg-stone-200 transition"
           >
             Priority & category
             <span className={`transition-transform ${detailsOpenId === todo.id ? "rotate-180" : ""}`}>▾</span>
           </button>
           <button
             onClick={() => setExpandedId(expandedId === todo.id ? null : todo.id)}
-            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-orange-50 text-stone-600 hover:bg-stone-200 transition"
           >
             {(subtasks[todo.id]?.length || 0) > 0
               ? `${subtasks[todo.id].filter(s => s.done).length}/${subtasks[todo.id].length} subtasks`
@@ -146,8 +146,8 @@ function SortableTodoItem({
           onClick={() => cycleColor(todo.id, c.name)}
           className={`text-sm px-3 py-1.5 rounded-full transition flex items-center gap-1.5 ${
             (todo.color || "none") === c.name
-              ? "bg-stone-900 text-white"
-              : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              ? "bg-emerald-700 text-white"
+              : "bg-orange-50 text-stone-500 hover:bg-stone-200"
           }`}
         >
           <span className={`w-2.5 h-2.5 rounded-full ${c.dot}`} />
@@ -164,8 +164,8 @@ function SortableTodoItem({
           onClick={() => updateCategory(todo.id, c)}
           className={`text-sm px-3 py-1.5 rounded-full transition ${
             (todo.category || "none") === c
-              ? "bg-stone-900 text-white"
-              : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+              ? "bg-emerald-700 text-white"
+              : "bg-orange-50 text-stone-500 hover:bg-stone-200"
           }`}
         >
           {c === "none" ? "No category" : c}
@@ -179,11 +179,11 @@ function SortableTodoItem({
         onChange={(e) => setNewCategoryText(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && addCustomCategory()}
         placeholder="New category..."
-        className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+        className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-orange-100 outline-none focus:border-stone-400"
       />
       <button
         onClick={addCustomCategory}
-        className="text-sm bg-stone-100 text-stone-600 px-3 py-1.5 rounded-lg hover:bg-stone-200"
+        className="text-sm bg-orange-50 text-stone-600 px-3 py-1.5 rounded-lg hover:bg-stone-200"
       >
         Add
       </button>
@@ -199,7 +199,7 @@ function SortableTodoItem({
               <button
                 onClick={() => toggleSubtask(todo.id, s.id, s.done)}
                 className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                  s.done ? "bg-stone-900 border-stone-900" : "border-stone-300"
+                  s.done ? "bg-emerald-700 border-emerald-700" : "border-stone-300"
                 }`}
               >
                 {s.done && <Check size={10} className="text-stone-50" />}
@@ -221,11 +221,11 @@ function SortableTodoItem({
             onChange={(e) => setNewSubtaskText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addSubtask(todo.id)}
             placeholder="Add a subtask"
-            className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+            className="flex-1 text-sm px-2 py-1.5 rounded-lg border border-orange-100 outline-none focus:border-stone-400"
           />
           <button
             onClick={() => addSubtask(todo.id)}
-            className="text-sm bg-stone-900 text-white px-2 py-1.5 rounded-lg hover:bg-stone-700"
+            className="text-sm bg-emerald-700 text-white px-2 py-1.5 rounded-lg hover:bg-emerald-800"
           >
             Add
           </button>
@@ -543,21 +543,24 @@ async function createList() {
 }
 
   const remaining = todos.filter((t) => !t.done).length;
+  const totalCount = todos.length;
+  const completedCount = todos.filter((t) => t.done).length;
+  const progressPercent = totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   if (showResetForm) {
   return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
-      <form onSubmit={handlePasswordUpdate} className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 w-full max-w-sm">
-        <h1 className="text-xl font-semibold text-stone-900 mb-4">Set a new password</h1>
+    <div className="min-h-screen bg-orange-50 flex items-center justify-center p-6">
+      <form onSubmit={handlePasswordUpdate} className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6 w-full max-w-sm">
+        <h1 className="text-xl font-semibold text-stone-800 mb-4">Set a new password</h1>
         <input
           type="password"
           placeholder="New password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          className="w-full mb-4 px-3 py-2.5 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none focus:border-stone-400"
+          className="w-full mb-4 px-3 py-2.5 text-sm bg-orange-50/50 rounded-lg border border-orange-100 outline-none focus:border-stone-400"
           required
         />
-        <button type="submit" className="w-full bg-stone-900 text-white rounded-lg py-2.5 text-sm hover:bg-stone-700 transition-colors">
+        <button type="submit" className="w-full bg-emerald-700 text-white rounded-lg py-2.5 text-sm hover:bg-emerald-800 transition-colors">
           Update password
         </button>
       </form>
@@ -582,15 +585,15 @@ async function handlePasswordUpdate(e) {
 }
 
   return (
-    <div className="min-h-screen bg-stone-100 flex items-start justify-center p-3">
+    <div className="min-h-screen bg-orange-50 flex items-start justify-center p-3">
       <div className="w-full max-w-md">
         {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-stone-900 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center flex-shrink-0">
             <ListChecks size={20} className="text-stone-50" />
           </div>
-          <h1 className="text-2xl font-semibold text-stone-900 tracking-tight">
+          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">
             To-do list
           </h1>
         </div>
@@ -601,12 +604,26 @@ async function handlePasswordUpdate(e) {
           Log out
         </button>
       </div>
+      {totalCount > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-sm text-stone-500 mb-1.5">
+            <span>{completedCount} of {totalCount} done</span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-orange-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 mb-4">
         <select
           value={currentListId || ""}
           onChange={(e) => setCurrentListId(Number(e.target.value))}
-          className="text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white outline-none w-full"
+          className="text-sm px-3 py-2 rounded-lg border border-orange-100 bg-white outline-none w-full"
         >
           {lists.map((l) => (
             <option key={l.id} value={l.id}>{l.name}</option>
@@ -618,18 +635,18 @@ async function handlePasswordUpdate(e) {
             onChange={(e) => setNewListName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && createList()}
             placeholder="New list name..."
-            className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
+            className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg border border-orange-100 outline-none"
           />
           <button
             onClick={createList}
-            className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700 flex-shrink-0"
+            className="text-sm bg-emerald-700 text-white px-3 py-2 rounded-lg hover:bg-emerald-800 flex-shrink-0"
           >
             Create
           </button>
         </div>
       </div>  
         {/* Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
           {/* Input */}
           <div className="flex items-center gap-2 p-5 border-b border-stone-100">
             <input
@@ -637,11 +654,11 @@ async function handlePasswordUpdate(e) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addTodo()}
               placeholder="Add a task and press enter"
-              className="flex-1 text-base text-stone-800 placeholder-stone-400 outline-none bg-stone-50 rounded-xl px-4 py-3.5 border border-transparent focus:border-stone-300 transition-colors"
+              className="flex-1 text-base text-stone-800 placeholder-stone-400 outline-none bg-orange-50/50 rounded-xl px-4 py-3.5 border border-transparent focus:border-stone-300 transition-colors"
             />
             <button
               onClick={addTodo}
-              className="w-12 h-12 rounded-xl bg-stone-900 hover:bg-stone-700 active:scale-95 transition flex items-center justify-center flex-shrink-0"
+              className="w-12 h-12 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 transition flex items-center justify-center flex-shrink-0"
               aria-label="Add task"
             >
               <Plus size={22} className="text-stone-50" />
@@ -658,8 +675,8 @@ async function handlePasswordUpdate(e) {
                     onClick={() => setFilter(f)}
                     className={`text-sm px-3.5 py-2 rounded-full capitalize transition ${
                       filter === f
-                        ? "bg-stone-900 text-stone-50"
-                        : "text-stone-500 hover:bg-stone-100"
+                        ? "bg-emerald-700 text-stone-50"
+                        : "text-stone-500 hover:bg-orange-50"
                     }`}
                   >
                     {f}
@@ -670,7 +687,7 @@ async function handlePasswordUpdate(e) {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="text-sm px-2 py-1 rounded-full bg-stone-100 text-stone-600 border-none outline-none"
+                className="text-sm px-2 py-1 rounded-full bg-orange-50 text-stone-600 border-none outline-none"
               >
                 <option value="all">All categories</option>
                 {allCategories.filter((c) => c !== "none").map((c) => (

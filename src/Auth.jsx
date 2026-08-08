@@ -49,12 +49,12 @@ export default function Auth({ onLogin }) {
 }
 
   return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-orange-50 flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 w-full max-w-sm transition-shadow hover:shadow-md"
+        className="bg-white rounded-2xl shadow-sm border border-orange-100 p-6 w-full max-w-sm transition-shadow hover:shadow-md"
       >
-        <h1 className="text-xl font-semibold text-stone-900 mb-1">
+        <h1 className="text-xl font-semibold text-stone-800 mb-1">
           {isSignUp ? "Create an account" : "To-Do List"}
         </h1>
         <p className="text-sm text-stone-400 mb-5">
@@ -66,7 +66,7 @@ export default function Auth({ onLogin }) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full mb-3 px-3 py-2.5 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
+            className="w-full mb-3 px-3 py-2.5 text-sm bg-orange-50/50 rounded-lg border border-orange-100 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
             required
         />
         
@@ -77,7 +77,7 @@ export default function Auth({ onLogin }) {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2.5 pr-10 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
+            className="w-full px-3 py-2.5 pr-10 text-sm bg-orange-50/50 rounded-lg border border-orange-100 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
             required
           />
           <button
@@ -104,7 +104,7 @@ export default function Auth({ onLogin }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-stone-900 text-white rounded-lg py-2.5 text-sm mb-3 transition-all hover:bg-stone-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-emerald-700 text-white rounded-lg py-2.5 text-sm mb-3 transition-all hover:bg-emerald-800 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Please wait..." : isSignUp ? "Sign up" : "Log in"}
         </button>
@@ -120,7 +120,7 @@ export default function Auth({ onLogin }) {
         <button
           type="button"
           onClick={() => setIsSignUp(!isSignUp)}
-          className="w-full text-xs text-stone-500 py-1 rounded-md transition-colors hover:text-stone-800 hover:bg-stone-50"
+          className="w-full text-xs text-stone-500 py-1 rounded-md transition-colors hover:text-stone-800 hover:bg-orange-50/50"
         >
           {isSignUp ? "Already have an account? Log in" : "Need an account? Sign up"}
         </button>
