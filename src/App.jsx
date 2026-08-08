@@ -645,6 +645,7 @@ async function handlePasswordUpdate(e) {
             Log out
           </button>
         </div>
+         <p className="text-sm text-stone-500 mb-6">Create your List</p>
         <div className="flex flex-col gap-3">
           {lists.map((l, i) => {
             const stats = listStats[l.id] || { total: 0, done: 0 };
@@ -703,7 +704,7 @@ async function handlePasswordUpdate(e) {
               </div>
             );
           })}
-          
+
           {lists.length === 0 && (
             <p className="text-sm text-stone-400 text-center py-10">
               No lists yet — tap + to create one.
@@ -772,6 +773,7 @@ async function handlePasswordUpdate(e) {
           Log out
         </button>
       </div>
+      
       {totalCount > 0 && (
         <div className="mb-4">
           <div className="flex items-center justify-between text-sm text-stone-500 mb-1.5">
