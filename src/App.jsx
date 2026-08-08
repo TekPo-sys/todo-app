@@ -1,5 +1,5 @@
 
-import { Plus, Trash2, Check, ListChecks } from "lucide-react";
+import { Plus, Trash2, Check, ListChecks, Pencil } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import Auth from "./Auth";
@@ -257,6 +257,8 @@ export default function TodoApp() {
   const [lists, setLists] = useState([]);
   const [currentListId, setCurrentListId] = useState(null);
   const [newListName, setNewListName] = useState("");
+  const [editingListId, setEditingListId] = useState(null);
+  const [editListName, setEditListName] = useState("");
 
   const [view, setView] = useState("lists"); // "lists" | "tasks"
   const [showCreateList, setShowCreateList] = useState(false);
@@ -514,6 +516,19 @@ async function cycleColor(id, color) {
   return true;
 });
 
+async function renameList(id) {
+  const name = editListName.trim();
+  if (!name) return;
+  const { error } = await supabase.from('lists').update({ name }).eq('id', id);
+  if (error) {
+    console.error(error);
+  } else {
+    setLists((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
+    setEditingListId(null);
+    setEditListName("");
+  }
+}
+
 async function fetchListStats(listIds) {
   if (!listIds || listIds.length === 0) return;
   const { data, error } = await supabase
@@ -630,22 +645,65 @@ async function handlePasswordUpdate(e) {
             Log out
           </button>
         </div>
-        <p className="text-sm text-stone-500 mb-6">Your lists, all in one place.</p>
-
         <div className="flex flex-col gap-3">
           {lists.map((l, i) => {
             const stats = listStats[l.id] || { total: 0, done: 0 };
+            const isEditingThis = editingListId === l.id;
+
+            if (isEditingThis) {
+              return (
+                <div
+                  key={l.id}
+                  className={`p-4 rounded-2xl ${cardColors[i % cardColors.length]}`}
+                >
+                  <input
+                    value={editListName}
+                    onChange={(e) => setEditListName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && renameList(l.id)}
+                    autoFocus
+                    className="w-full text-base font-semibold px-2 py-1.5 rounded-lg border border-white/50 bg-white/70 outline-none mb-2"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => renameList(l.id)}
+                      className="text-sm bg-white/70 px-3 py-1 rounded-lg font-medium"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => { setEditingListId(null); setEditListName(""); }}
+                      className="text-sm px-3 py-1 rounded-lg opacity-70"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             return (
-              <button
+              <div
                 key={l.id}
-                onClick={() => { setCurrentListId(l.id); setView("tasks"); }}
-                className={`text-left p-4 rounded-2xl transition active:scale-[0.98] ${cardColors[i % cardColors.length]}`}
+                className={`flex items-center justify-between p-4 rounded-2xl transition ${cardColors[i % cardColors.length]}`}
               >
-                <div className="font-semibold text-lg">{l.name}</div>
-                <div className="text-sm opacity-70">{stats.done} of {stats.total} tasks</div>
-              </button>
+                <button
+                  onClick={() => { setCurrentListId(l.id); setView("tasks"); }}
+                  className="text-left flex-1 active:scale-[0.98] transition"
+                >
+                  <div className="font-semibold text-lg">{l.name}</div>
+                  <div className="text-sm opacity-70">{stats.done} of {stats.total} tasks</div>
+                </button>
+                <button
+                  onClick={() => { setEditingListId(l.id); setEditListName(l.name); }}
+                  className="p-2 opacity-60 active:opacity-100"
+                  aria-label="Rename list"
+                >
+                  <Pencil size={16} />
+                </button>
+              </div>
             );
           })}
+          
           {lists.length === 0 && (
             <p className="text-sm text-stone-400 text-center py-10">
               No lists yet — tap + to create one.
