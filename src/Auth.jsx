@@ -55,21 +55,21 @@ export default function Auth({ onLogin }) {
         className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 w-full max-w-sm transition-shadow hover:shadow-md"
       >
         <h1 className="text-xl font-semibold text-stone-900 mb-1">
-          {isSignUp ? "Create an account" : "Welcome back"}
+          {isSignUp ? "Create an account" : "To-Do List"}
         </h1>
         <p className="text-sm text-stone-400 mb-5">
           {isSignUp ? "Sign up to start your list" : "Log in to see your tasks"}
         </p>
-
         <input
-          type="email"
-          autoComplete="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full mb-3 px-3 py-2.5 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
-          required
+            type="email"
+            autoComplete="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full mb-3 px-3 py-2.5 text-sm bg-stone-50 rounded-lg border border-stone-200 outline-none transition-colors focus:border-stone-400 focus:bg-white hover:border-stone-300"
+            required
         />
+        
         <div className="relative mb-4">
           <input
             type={showPassword ? "text" : "password"}
