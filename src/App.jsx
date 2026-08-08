@@ -258,9 +258,6 @@ export default function TodoApp() {
   const [currentListId, setCurrentListId] = useState(null);
   const [newListName, setNewListName] = useState("");
 
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteMessage, setInviteMessage] = useState("");
-
   const colorOptions = [
   { name: "none", dot: "bg-stone-300", border: "border-l-stone-300", bg: "bg-white" },
   { name: "red", dot: "bg-red-400", border: "border-l-red-500", bg: "bg-red-50" },
@@ -546,25 +543,6 @@ async function createList() {
   setNewListName("");
 }
 
-async function inviteToList() {
-  const email = inviteEmail.trim();
-  if (!email || !currentListId) return;
-
-  const { data, error } = await supabase.rpc('invite_to_list', {
-    target_list_id: currentListId,
-    invitee_email: email,
-  });
-
-  if (error) {
-    setInviteMessage("Something went wrong. Try again.");
-  } else if (data.startsWith("error")) {
-    setInviteMessage(data.replace("error: ", ""));
-  } else {
-    setInviteMessage(`Invited ${email} successfully!`);
-    setInviteEmail("");
-  }
-}
-
   const remaining = todos.filter((t) => !t.done).length;
 
   if (showResetForm) {
@@ -617,11 +595,6 @@ async function handlePasswordUpdate(e) {
             To-do list
           </h1>
         </div>
-        {currentListId && lists.find((l) => l.id === currentListId)?.owner_id !== session.user.id && (
-            <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-stone-100 text-stone-500 mt-1">
-              Shared list
-            </span>
-          )}
         <button
           onClick={() => supabase.auth.signOut()}
           className="text-sm text-stone-400 hover:text-stone-700 transition-colors"
@@ -636,19 +609,9 @@ async function handlePasswordUpdate(e) {
           onChange={(e) => setCurrentListId(Number(e.target.value))}
           className="text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white outline-none"
         >
-          <optgroup label="My Lists">
-            {lists.filter((l) => l.owner_id === session.user.id).map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
-            ))}
-          </optgroup>
-          {lists.some((l) => l.owner_id !== session.user.id) && (
-            <optgroup label="Shared with me">
-              {lists.filter((l) => l.owner_id !== session.user.id).map((l) => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-              
-            </optgroup>
-          )}
+         {lists.map((l) => (
+            <option key={l.id} value={l.id}>{l.name}</option>
+          ))}
         </select>
         <input
           value={newListName}
@@ -663,29 +626,7 @@ async function handlePasswordUpdate(e) {
         >
           Create
         </button>
-      </div>
-      {lists.find((l) => l.id === currentListId)?.owner_id === session.user.id && (
-        <div className="flex items-center gap-2 mb-4">
-          <input
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && inviteToList()}
-            placeholder="Invite by email..."
-            type="email"
-            className="flex-1 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
-          />
-          <button
-            onClick={inviteToList}
-            className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700"
-          >
-            Invite
-          </button>
-        </div>
-      )}
-      {inviteMessage && (
-        <p className="text-sm text-stone-500 mb-4">{inviteMessage}</p>
-      )}
-      
+      </div>  
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
           {/* Input */}
