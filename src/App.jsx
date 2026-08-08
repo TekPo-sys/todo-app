@@ -130,8 +130,9 @@ function SortableTodoItem({
       </div>
       <button
         onClick={() => deleteTodo(todo.id)}
-        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-stone-400 hover:text-red-500 transition flex-shrink-0"
-        aria-label="Delete task">
+        className="text-stone-400 active:text-red-500 transition flex-shrink-0"
+        aria-label="Delete task"
+      >
         <Trash2 size={18} />
       </button>
     </li>
@@ -209,8 +210,7 @@ function SortableTodoItem({
               </span>
               <button
                 onClick={() => deleteSubtask(todo.id, s.id)}
-                className="opacity-0 group-hover/sub:opacity-100 text-stone-300 hover:text-red-500"
-              >
+                className="text-stone-300 active:text-red-500"              >
                 <Trash2 size={18} />
               </button>
             </div>
@@ -583,15 +583,15 @@ async function handlePasswordUpdate(e) {
 }
 
   return (
-    <div className="min-h-screen bg-stone-100 flex items-start justify-center p-4 sm:p-10">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-stone-100 flex items-start justify-center p-3">
+      <div className="w-full max-w-md">
         {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <div className="w-11 h-11 rounded-xl bg-stone-900 flex items-center justify-center flex-shrink-0">
-            <ListChecks size={22} className="text-stone-50" />
+          <div className="w-10 h-10 rounded-xl bg-stone-900 flex items-center justify-center flex-shrink-0">
+            <ListChecks size={20} className="text-stone-50" />
           </div>
-          <h1 className="text-3xl font-semibold text-stone-900 tracking-tight">
+          <h1 className="text-2xl font-semibold text-stone-900 tracking-tight">
             To-do list
           </h1>
         </div>
@@ -648,7 +648,7 @@ async function handlePasswordUpdate(e) {
           </div>
 
           {/* Filters */}
-          <div className="flex items-center justify-between px-4 pt-3">
+          <div className="flex items-center justify-between px-4 pt-3 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 {["all", "active", "done"].map((f) => (
