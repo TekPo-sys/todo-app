@@ -88,16 +88,21 @@ function SortableTodoItem({
         {todo.done && <Check size={16} className="text-stone-50" />}
       </button>
 
-      <div className="flex-1 min-w-0" onClick={() => startEdit(todo)}>
-        <span className={`text-base cursor-text ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}>
+      <div className="flex-1 min-w-0">
+        <span
+          onClick={() => startEdit(todo)}
+          className={`text-base cursor-text ${todo.done ? "text-stone-400 line-through" : "text-stone-800"}`}
+        >
           {todo.text}
         </span>
-        {todo.due_date && (
-          <div className={`text-sm ${overdue ? "text-red-500 font-medium" : "text-stone-400"}`}>
-            {overdue ? "Overdue: " : "Due "}
-            {new Date(todo.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-          </div>
-        )}
+        <div
+          onClick={() => startEdit(todo)}
+          className={`text-sm ${todo.due_date ? (overdue ? "text-red-500 font-medium" : "text-stone-400") : "text-stone-300 italic"}`}
+        >
+          {todo.due_date
+            ? `${overdue ? "Overdue: " : "Due "}${new Date(todo.due_date + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+            : "Add due date"}
+        </div>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {todo.category && todo.category !== "none" && (
             <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-500">
@@ -105,20 +110,14 @@ function SortableTodoItem({
             </span>
           )}
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setDetailsOpenId(detailsOpenId === todo.id ? null : todo.id);
-            }}
+            onClick={() => setDetailsOpenId(detailsOpenId === todo.id ? null : todo.id)}
             className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
           >
             Priority & category
             <span className={`transition-transform ${detailsOpenId === todo.id ? "rotate-180" : ""}`}>▾</span>
           </button>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpandedId(expandedId === todo.id ? null : todo.id);
-            }}
+            onClick={() => setExpandedId(expandedId === todo.id ? null : todo.id)}
             className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-stone-100 text-stone-600 hover:bg-stone-200 transition"
           >
             {(subtasks[todo.id]?.length || 0) > 0
