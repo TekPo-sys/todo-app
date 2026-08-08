@@ -248,6 +248,7 @@ export default function TodoApp() {
   const [customCategories, setCustomCategories] = useState([]);
   const [newCategoryText, setNewCategoryText] = useState("");
   const [listStats, setListStats] = useState({}); // { listId: { total, done } }
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [subtasks, setSubtasks] = useState({}); // { todoId: [subtask, ...] }
@@ -494,6 +495,16 @@ async function deleteTodo(id) {
   else setTodos((prev) => prev.filter((t) => t.id !== id));
 }
 
+async function deleteList(id) {
+  const { error } = await supabase.from('lists').delete().eq('id', id);
+  if (error) {
+    console.error(error);
+  } else {
+    setLists((prev) => prev.filter((l) => l.id !== id));
+    if (currentListId === id) setCurrentListId(null);
+  }
+}
+
 async function clearCompleted() {
   const { error } = await supabase
     .from('todos')
@@ -701,6 +712,13 @@ async function handlePasswordUpdate(e) {
                 >
                   <Pencil size={16} />
                 </button>
+                <button
+                  onClick={() => setConfirmDeleteId(l.id)}
+                  className="p-2 opacity-60 active:opacity-100"
+                  aria-label="Delete list"
+                >
+                  <Trash2 size={16} />
+                </button>
               </div>
             );
           })}
@@ -751,6 +769,31 @@ async function handlePasswordUpdate(e) {
             </div>
           </div>
         )}
+
+        {confirmDeleteId && (
+          <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-5 w-full max-w-sm">
+              <h2 className="text-lg font-semibold text-stone-800 mb-2">Delete this list?</h2>
+              <p className="text-sm text-stone-500 mb-4">
+                This will permanently delete "{lists.find((l) => l.id === confirmDeleteId)?.name}" and all its tasks. This can't be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { deleteList(confirmDeleteId); setConfirmDeleteId(null); }}
+                  className="flex-1 bg-red-500 text-white py-2.5 rounded-lg text-sm"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 bg-stone-100 text-stone-600 py-2.5 rounded-lg text-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -789,32 +832,6 @@ async function handlePasswordUpdate(e) {
         </div>
       )}
 
-      {/* <div className="flex flex-col gap-2 mb-4">
-        <select
-          value={currentListId || ""}
-          onChange={(e) => setCurrentListId(Number(e.target.value))}
-          className="text-sm px-3 py-2 rounded-lg border border-orange-100 bg-white outline-none w-full"
-        >
-          {lists.map((l) => (
-            <option key={l.id} value={l.id}>{l.name}</option>
-          ))}
-        </select>
-        <div className="flex items-center gap-2">
-          <input
-            value={newListName}
-            onChange={(e) => setNewListName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && createList()}
-            placeholder="New list name..."
-            className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg border border-orange-100 outline-none"
-          />
-          <button
-            onClick={createList}
-            className="text-sm bg-emerald-700 text-white px-3 py-2 rounded-lg hover:bg-emerald-800 flex-shrink-0"
-          >
-            Create
-          </button>
-        </div>
-      </div>   */}
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
           {/* Input */}
