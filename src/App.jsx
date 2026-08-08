@@ -603,29 +603,31 @@ async function handlePasswordUpdate(e) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-col gap-2 mb-4">
         <select
           value={currentListId || ""}
           onChange={(e) => setCurrentListId(Number(e.target.value))}
-          className="text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white outline-none"
+          className="text-sm px-3 py-2 rounded-lg border border-stone-200 bg-white outline-none w-full"
         >
-         {lists.map((l) => (
+          {lists.map((l) => (
             <option key={l.id} value={l.id}>{l.name}</option>
           ))}
         </select>
-        <input
-          value={newListName}
-          onChange={(e) => setNewListName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && createList()}
-          placeholder="New list name..."
-          className="flex-1 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
-        />
-        <button
-          onClick={createList}
-          className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700"
-        >
-          Create
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && createList()}
+            placeholder="New list name..."
+            className="flex-1 min-w-0 text-sm px-3 py-2 rounded-lg border border-stone-200 outline-none"
+          />
+          <button
+            onClick={createList}
+            className="text-sm bg-stone-900 text-white px-3 py-2 rounded-lg hover:bg-stone-700 flex-shrink-0"
+          >
+            Create
+          </button>
+        </div>
       </div>  
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
